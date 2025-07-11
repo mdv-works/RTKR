@@ -1,0 +1,286 @@
+# rtkr/rtkr.kv
+
+<RevisionList>:
+    # Defines the layout for the revision list panel.
+    orientation: 'vertical'
+    size_hint_x: None # Allows explicit width setting
+    width: 320 # Default width, will be overridden by MainLayout's logic
+    
+    # New BoxLayout to contain the "Start Revision" button and the ScrollView
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_y: 1 # Take full height of RevisionList
+        
+        Button:
+            id: start_revision_btn
+            text: 'Start Revision'
+            size_hint_y: None # Set size_hint_y to None when controlling height directly
+            height: dp(50) if not root.in_revision_mode else 0 # Control height to hide
+            on_release: app.root.start_revision_session() # Call method on MainLayout
+            background_normal: ''
+            background_color: .2,.42,.89,1 # Custom blue background
+            disabled: len(root.revisions) == 0 # Disable if no revisions
+            opacity: 1 if not root.in_revision_mode else 0 # Control opacity for visual hiding
+            
+        ScrollView:
+            # Enables scrolling for the list of revision words.
+            do_scroll_x: False
+            do_scroll_y: True
+            # Add a transparent background to the ScrollView to prevent the white default background
+            canvas.before:
+                Color:
+                    rgba: 0, 0, 0, 0 # Fully transparent
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            GridLayout:
+                # Layout for individual word entries in the revision list.
+                id: grid
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height # Ensures the grid expands to fit its content
+                # Ensure GridLayout also has a transparent background
+                canvas.before:
+                    Color:
+                        rgba: 0, 0, 0, 0 # Fully transparent
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+
+<MainLayout>:
+    # Defines the main layout of the application.
+    canvas.before:
+        # Draws a background color for the entire application window.
+        Color:
+            rgba: 0.082,0.082,0.098,1 # Dark grey background
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        # Main horizontal box layout to hold the revision panel and the main content.
+        id: main_box
+        orientation: 'horizontal'
+        
+        # Revision panel widget
+        RevisionList:
+            id: rev_panel
+            revisions: root.revisions # Binds the revisions list to the RevisionList widget
+            remove_callback: root.on_remove_revision # Binds the remove callback
+            # Pass the in_revision_mode property down to RevisionList from MainLayout
+            in_revision_mode: root.in_revision_mode 
+            opacity: 0 # Hidden by default
+            size_hint_x: None # Allows explicit width setting
+            width: 0 # Hidden by default initially
+        
+        # Draggable handle for resizing the revision panel
+        BoxLayout:
+            id: resize_handle
+            size_hint_x: None # Allows explicit width setting, but we'll control width directly
+            width: root.resize_handle_width # Width is controlled by MainLayout property
+            # Position the handle centered on the right edge of the revision panel.
+            pos: rev_panel.x + rev_panel.width - self.width / 2, self.y
+            opacity: 1 if rev_panel.width > 0 and not root.in_revision_mode else 0 # Only visible when the panel is open and not in revision mode
+            canvas.before:
+                # Draws a visual representation of the resize handle.
+                Color:
+                    rgba: 0.2, 0.2, 0.2, 1 if self.opacity == 1 else 0 # Darker grey handle, visible when panel is open
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+        AnchorLayout:
+            # Centers the main word display and control buttons.
+            anchor_x: 'center'
+            anchor_y: 'center'
+            RelativeLayout:
+                # Play Audio Button - positioned above the word label
+                Button:
+                    id: play_audio_btn
+                    text: 'Audio' # Changed text to speaker emoji
+                    font_size: 16 # Increased font size for emoji visibility
+                    size_hint: None, None
+                    size: dp(60), dp(30) # Adjusted size for a more square button
+                    pos_hint: {'center_x': 0.5, 'top': 0.9} # Position above word_label
+                    on_release: root.play_current_audio() # Changed call to new TTS method
+                    background_normal: ''
+                    background_color: .23,.25,.27,1 # Blue color for audio button
+                    opacity: 1 # Always visible
+
+                # Main "Select Source" button
+                Button:
+                    id: select_source_btn
+                    text: 'Select Source' # Initial text, will be updated by _update_select_source_button_text
+                    size_hint: None, None
+                    size: dp(150), dp(30) # Adjust size as needed
+                    pos_hint: {'right': 0.99, 'top': 0.99} # Top right corner, slightly adjusted
+                    on_release: root.toggle_source_panel()
+                    background_normal: ''
+                    background_color: .4,.2,.89,1 # Purple-ish color
+                    # Hide/show based on revision mode
+                    opacity: 1 if not root.in_revision_mode else 0
+                    height: dp(30) if not root.in_revision_mode else 0 # Control height to hide it completely
+
+                # New BoxLayout for source selection buttons (initially hidden)
+                BoxLayout:
+                    id: source_buttons_panel
+                    orientation: 'vertical'
+                    size_hint: None, None
+                    width: dp(150) # Same width as the select_source_btn
+                    height: dp(30 * 6 + 5 * 5) # Fixed height when visible (6 buttons * height + 5 spacings)
+                    # Dynamic Y position: below select_source_btn when visible, off-screen when hidden
+                    y: select_source_btn.y - self.height - dp(5) if root.source_panel_visible else -self.height - dp(1000) # Move off-screen
+                    pos_hint: {'right': 0.99} # Keep right alignment
+                    spacing: dp(5) # Spacing between buttons
+                    opacity: 1 if root.source_panel_visible and not root.in_revision_mode else 0 # Visible only when toggled AND not in revision mode
+                    # Removed 'disabled' property from here and children, relying on off-screen position for interaction prevention
+                    
+                    # JMdict button
+                    Button:
+                        text: 'JMdict'
+                        size_hint_y: None
+                        height: dp(30)
+                        on_release: root.set_source('JMdict')
+                        background_normal: ''
+                        background_color: .23,.25,.27,1
+
+                    # JLPT N1 button
+                    Button:
+                        text: 'JLPT N1'
+                        size_hint_y: None
+                        height: dp(30)
+                        on_release: root.set_source('JLPT1')
+                        background_normal: ''
+                        background_color: .23,.25,.27,1
+
+                    # JLPT N2 button
+                    Button:
+                        text: 'JLPT N2'
+                        size_hint_y: None
+                        height: dp(30)
+                        on_release: root.set_source('JLPT2')
+                        background_normal: ''
+                        background_color: .23,.25,.27,1
+
+                    # JLPT N3 button
+                    Button:
+                        text: 'JLPT N3'
+                        size_hint_y: None
+                        height: dp(30)
+                        on_release: root.set_source('JLPT3')
+                        background_normal: ''
+                        background_color: .23,.25,.27,1
+
+                    # JLPT N4 button
+                    Button:
+                        text: 'JLPT N4'
+                        size_hint_y: None
+                        height: dp(30)
+                        on_release: root.set_source('JLPT4')
+                        background_normal: ''
+                        background_color: .23,.25,.27,1
+
+                    # JLPT N5 button
+                    Button:
+                        text: 'JLPT N5'
+                        size_hint_y: None
+                        height: dp(30)
+                        on_release: root.set_source('JLPT5')
+                        background_normal: ''
+                        background_color: .23,.25,.27,1
+
+                # Layout for the Japanese word display.
+                Label:
+                    id: word_label
+                    text: '...' # Placeholder text
+                    font_name: 'HinaMincho' # Custom Japanese font
+                    font_size: 60
+                    color: 1,1,1,1 # White text
+                    size_hint: None, None
+                    size: self.texture_size # Label size adapts to text content
+                    pos_hint: {'center_x':0.5, 'center_y':0.6}
+                
+                # Blue dot indicator for new word
+                Widget:
+                    id: blue_dot
+                    size_hint: None, None
+                    size: dp(10), dp(10) # Small square for the dot
+                    # Changed position to top-left
+                    pos_hint: {'x': 0.01, 'top': 0.99} 
+                    opacity: 0 if root.in_revision_mode else 1 # Hidden in revision mode, otherwise visible
+                    canvas:
+                        Color:
+                            rgba: 0.2, 0.6, 1, 1 # Blue color
+                        Ellipse:
+                            pos: self.pos
+                            size: self.size
+
+                BoxLayout:
+                    id: buttons_box
+                    orientation: 'vertical' # Changed to vertical to stack button rows
+                    size_hint: 1, None
+                    height: dp(120) # Fixed height for the button box (two rows + spacing + padding)
+                    pos_hint: {'x':0,'y':0} # Position at the bottom left
+                    spacing: dp(10) # Added spacing between rows
+                    padding: dp(10), dp(10), dp(10), dp(10) # Added padding around the button box
+
+                    # Row 1: Always visible buttons (Show/Next) - their text changes based on mode
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(50) # Fixed height for this row
+                        spacing: dp(10) # Spacing between buttons in this row
+                        Button:
+                            id: show_btn
+                            text: 'Show word' if not root.in_revision_mode else 'Show Kanji'
+                            disabled: True # Controlled by Python
+                            on_release: root.show_word()
+                            background_normal: ''
+                            background_color: .23,.25,.27,1
+                            size_hint_x: 1
+                        Button:
+                            id: next_btn
+                            text: 'Next' if not root.in_revision_mode else 'Next Word'
+                            disabled: True # Controlled by Python
+                            on_release: root.next_word()
+                            background_normal: ''
+                            background_color: .23,.25,.27,1
+                            size_hint_x: 1
+
+                    # Row 2: Normal Mode specific buttons (Mark, Review List)
+                    BoxLayout:
+                        id: normal_mode_extras
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(50) if not root.in_revision_mode else 0 # Take height only in normal mode
+                        opacity: 1 if not root.in_revision_mode else 0 # Visible only in normal mode
+                        spacing: dp(10) # Spacing between buttons in this row
+                        Button:
+                            id: mark_btn
+                            text: 'Mark'
+                            # Changed: The mark button is disabled only if in revision mode.
+                            # It will remain enabled when the word is shown (kanji revealed).
+                            disabled: root.in_revision_mode 
+                            on_release: root.mark_current()
+                            background_normal: ''
+                            background_color: .23,.25,.27,1
+                            size_hint_x: 1
+                        Button:
+                            id: review_toggle_btn
+                            text: 'Review List'
+                            on_release: root.toggle_review()
+                            background_normal: ''
+                            background_color: .2,.42,.89,1
+                            size_hint_x: 1
+
+                    # Row 3: Revision Mode specific button (End Review Session)
+                    Button:
+                        id: end_review_btn
+                        text: 'End Review Session'
+                        on_release: root.end_revision_session()
+                        background_normal: ''
+                        background_color: .89,.2,.2,1 # Red background for ending session
+                        size_hint_y: None
+                        height: dp(50) if root.in_revision_mode else 0 # Take height only in revision mode
+                        opacity: 1 if root.in_revision_mode else 0 # Only visible in revision mode
+                        disabled: not root.in_revision_mode # Disable if not in revision mode
+                        size_hint_x: 1 # Take full width of the parent (buttons_box)
