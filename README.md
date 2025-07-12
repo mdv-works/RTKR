@@ -16,7 +16,7 @@ The system forces the recall of Kanji without any hints, and the user is expecte
 
 It may also help improve listening skills, especially in distinguishing homophones. Since the user must interpret the Hiragana and audio without context, they are challenged to recall the correct Kanji and meaning based on sound alone. The added TTS pitch accent can assist in narrowing down possibilities, making this a valuable way to practice sound-to-meaning recognition.
 
-For instance, if the word とうしょ appears, the user may think of the word 当所, and write it down. When he checks the answer, 投書 was instead the intended word. When replaying the audio, he may notice the pitch accent and then check with external tools if both options have the same one. He will then see that 投書 (Heiban) has a different pitch accent than 当所 and 当初 (both Atamadaka). He may then consider it worth adding to the revision list for later, because he struggled with some part of this parsing and writing process. This is the expected experience and flow of the app, where it is expected even for advanced learners to not be familiar with all options and to struggle with the out-of-context recall (which can be solved by adding words to review).
+For instance, if the word とうしょ appears, the user may think of the word 当所, and write it down. When he checks the answer, 投書 was instead the intended word. When replaying the audio, he may notice the pitch accent and then check with external tools if both options have the same one. He will then see that 投書 (Heiban) has a different pitch accent than 当所 and 当初 (both Atamadaka). He may then consider it worth adding to the revision list for later, because he struggled with some part of this parsing and writing process. This is the expected experience and flow of the app, where even advanced learners will not be familiar with all options and should struggle with the out-of-context recall.
 
 # Current limitations
 
@@ -57,7 +57,7 @@ Future releases may be able to overcome these issues.
    cd RTKR # Assuming your main project folder is 'RTKR'
    ```
 
-2. **Create a virtual environment (recommended):**
+2. **Create a virtual environment:**
 
    ```bash
    python -m venv venv
@@ -69,12 +69,7 @@ Future releases may be able to overcome these issues.
    ```bash
    pip install -r requirements.txt
    ```
-
-4. **Download JMdict_e:**
-   The application expects a file named `JMdict_e` (without any extension) in the `rtkr/resources/` directory (i.e., `RTKR/rtkr/resources/`). You can typically find this file as part of the JMdict XML distribution. You might need to download the full JMdict XML file and extract or rename the main dictionary file to `JMdict_e`.
-
-   - A common source for JMdict XML is the [JMdict website](https://www.edrdg.org/jmdict/jmdict_e.html). Look for the "JMdict_e.gz" or similar XML file. Download it, extract it, and place the `JMdict_e` file (which is the XML content without a `.xml` extension) into `rtkr/resources/`.
-
+   
 ## Usage
 
 To run the application, navigate to the `RTKR` directory (the parent directory of your `rtkr` package) and execute the `main.py` file within the `rtkr` package:
